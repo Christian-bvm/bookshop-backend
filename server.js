@@ -120,17 +120,9 @@ Stripe Session: ${session.id}`
  * This handles the browser preflight (OPTIONS) from Squarespace.
  */
 app.use((req, res, next) => {
-  const allowedOrigins = [
-    "https://www.bildervonmorgen.org",
-    "https://bildervonmorgen.org"
-  ];
+  console.log("REQ", req.method, req.path, "Origin:", req.headers.origin);
 
-  const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-
-  res.setHeader("Vary", "Origin");
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
