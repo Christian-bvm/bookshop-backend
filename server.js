@@ -136,6 +136,13 @@ app.use(express.json());
 /**
  * 4) Create Stripe Checkout Session (quantity 1..10, 20 EUR/unit)
  */
+app.options("/create-checkout-session", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "https://www.bildervonmorgen.org");
+  res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  return res.sendStatus(204);
+});
+
 app.post("/create-checkout-session", async (req, res) => {
   const { firstName, lastName, email, quantity } = req.body || {};
   if (!firstName || !lastName || !email) {
