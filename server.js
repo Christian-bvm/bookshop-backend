@@ -4,15 +4,34 @@ import Stripe from "stripe";
 import nodemailer from "nodemailer";
 
 const app = express();
+
+// Fail fast with a clear log if env vars are missing
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error("Missing env: STRIPE_SECRET_KEY");
+}
+if (!process.env.PUBLIC_SITE_URL) {
+  throw new Error("Missing env: PUBLIC_SITE_URL");
+}
+if (!process.env.ADMIN_EMAIL) {
+  throw new Error("Missing env: ADMIN_EMAIL");
+}
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Stripe Webhook (RAW body!)
+/**
+ * 1) Stripe Webhook (RAW body!)
+ * Must be registered BEFORE any body parser (express.json()).
+ */
 app.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   const sig = req.headers["stripe-signature"];
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
   } catch (err) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
@@ -35,6 +54,7 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
 
     const unitPriceEur = 20;
     const totalEur = (qty * unitPriceEur).toFixed(2);
+    const bookName = process.env.BOOK_NAME || "Buch";
 
     const transporter = nodemailer.createTransport({
       host: "mail.gmx.net",
@@ -43,8 +63,6 @@ app.post("/webhook", express.raw({ type: "application/json" }), async (req, res)
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
       requireTLS: String(process.env.SMTP_PORT) !== "465"
     });
-
-    const bookName = process.env.BOOK_NAME || "Buch";
 
     // Mail an Käufer
     if (buyerEmail) {
@@ -70,7 +88,7 @@ Wir versenden so schnell wie möglich.`
       });
     }
 
-    // Mail an dich (ADMIN_EMAIL)
+    // Mail an Admin
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: process.env.ADMIN_EMAIL,
@@ -97,20 +115,40 @@ Stripe Session: ${session.id}`
   res.json({ received: true });
 });
 
-app.use(express.json());
-
-// CORS für Squarespace (www)
+/**
+ * 2) CORS MUST come BEFORE express.json()
+ * This handles the browser preflight (OPTIONS) from Squarespace.
+ */
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "https://www.bildervonmorgen.org");
+  const allowedOrigins = [
+    "https://www.bildervonmorgen.org",
+    "https://bildervonmorgen.org"
+  ];
+
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+
+  res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
 
+// 3) JSON body parser for normal API routes
+app.use(express.json());
+
+/**
+ * 4) Create Stripe Checkout Session (quantity 1..10, 20 EUR/unit)
+ */
 app.post("/create-checkout-session", async (req, res) => {
   const { firstName, lastName, email, quantity } = req.body || {};
-  if (!firstName || !lastName || !email) return res.status(400).json({ error: "Missing fields" });
+  if (!firstName || !lastName || !email) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
 
   const q = Math.max(1, Math.min(10, parseInt(quantity, 10) || 1));
 
@@ -120,14 +158,16 @@ app.post("/create-checkout-session", async (req, res) => {
 
     shipping_address_collection: { allowed_countries: ["AT", "DE", "CH"] },
 
-    line_items: [{
-      price_data: {
-        currency: "eur",
-        product_data: { name: process.env.BOOK_NAME || "Mein Buch" },
-        unit_amount: 2000
-      },
-      quantity: q
-    }],
+    line_items: [
+      {
+        price_data: {
+          currency: "eur",
+          product_data: { name: process.env.BOOK_NAME || "Mein Buch" },
+          unit_amount: 2000 // 20.00 EUR
+        },
+        quantity: q
+      }
+    ],
 
     success_url: `${process.env.PUBLIC_SITE_URL}/success`,
     cancel_url: `${process.env.PUBLIC_SITE_URL}/cancel`,
