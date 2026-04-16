@@ -171,4 +171,14 @@ app.post("/create-checkout-session", async (req, res) => {
 
 app.get("/health", (req, res) => res.send("ok"));
 
+app.get("/debug-cors", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Content-Type", "application/json");
+  res.send(JSON.stringify({
+    ok: true,
+    origin: req.headers.origin || null,
+    time: new Date().toISOString()
+  }));
+});
+
 app.listen(process.env.PORT || 4242, () => console.log("Server running"));
