@@ -108,9 +108,14 @@ Wir versenden so schnell wie möglich.`
 
       // Admin-Mail
       try {
+        const adminRecipients = [
+              process.env.ADMIN_EMAIL,
+              process.env.ADMIN_EMAIL2
+            ].filter(Boolean).join(", ");
+
         await transporter.sendMail({
           from: process.env.SMTP_FROM,
-          to: process.env.ADMIN_EMAIL,
+          to: adminRecipients,
           subject: `Neue Buchbestellung (${bookName})`,
           text:
 `Erfolgreich bezahlt:
