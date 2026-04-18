@@ -62,7 +62,7 @@ ${addr.state ? addr.state + "\n" : ""}${addr.country || ""}`
 
       console.log("ADDRESS TEXT:", addressText);
 
-      const unitPriceEur = 20;
+      const unitPriceEur = 21;
       const totalEur = (qty * unitPriceEur).toFixed(2);
       const bookName = process.env.BOOK_NAME || "Buch";
 
@@ -185,7 +185,7 @@ app.post("/create-checkout-session", async (req, res) => {
         price_data: {
           currency: "eur",
           product_data: { name: process.env.BOOK_NAME || "Mein Buch" },
-          unit_amount: 2000
+          unit_amount: 2100
         },
         quantity: q
       }
