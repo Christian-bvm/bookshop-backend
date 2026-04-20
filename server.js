@@ -88,9 +88,9 @@ ${addr.state ? addr.state + "\n" : ""}${addr.country || ""}`
 `Danke für deine Bestellung!
 
 Buch: ${bookName}
-Stückpreis: ${unitPriceEur.toFixed(2)} EUR
+Stückpreis: ${unitPriceEur.toFixed(2)} EUR inkl. 10% MwSt.
 Anzahl: ${qty}
-Gesamt: ${totalEur} EUR
+Gesamt: ${totalEur} EUR inkl. 10% MwSt.
 Versand: Gratis (AT/DE/CH)
 
 Name: ${firstName} ${lastName}
@@ -121,9 +121,9 @@ Wir versenden so schnell wie möglich.`
 `Erfolgreich bezahlt:
 
 Buch: ${bookName}
-Stückpreis: ${unitPriceEur.toFixed(2)} EUR
+Stückpreis: ${unitPriceEur.toFixed(2)} EUR inkl. 10% MwSt.
 Anzahl: ${qty}
-Gesamt: ${totalEur} EUR
+Gesamt: ${totalEur} EUR inkl. 10% MwSt.
 Versand: Gratis (AT/DE/CH)
 
 Name: ${firstName} ${lastName}
@@ -184,7 +184,7 @@ app.post("/create-checkout-session", async (req, res) => {
       {
         price_data: {
           currency: "eur",
-          product_data: { name: process.env.BOOK_NAME || "Mein Buch" },
+          product_data: { name: `${process.env.BOOK_NAME || "Mein Buch"} (inkl. 10% MwSt.)` },
           unit_amount: 2100
         },
         quantity: q
